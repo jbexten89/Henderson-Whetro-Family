@@ -128,6 +128,8 @@ nav a svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;
 .task.req{cursor:default;grid-template-columns:14px minmax(0,1fr)}
 .rqdot{width:12px;height:12px;border-radius:50%;border:2px solid var(--mute);margin-top:5px}
 .req.sent .rqdot{border-color:#E3A04F;background:#E3A04F}
+.req.partial .rqdot{border-color:var(--peri);background:linear-gradient(90deg,var(--peri) 50%,transparent 50%)}
+.req.partial .rqbar button.on{background:var(--peri);border-color:var(--peri);color:#111}
 .req.answered .rqdot{border-color:var(--accent);background:var(--accent)}
 .req.answered .rqtext{color:var(--mute)}
 .rqbar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
@@ -568,6 +570,22 @@ html.slimhdr .homecard{display:none}
 @media print{#view-book>.seg{display:none}}
 
 .gmap .town{background:none;border:0;box-shadow:none;color:#9aa3b2;font:600 11px/1 "Nunito Sans",sans-serif;padding:0;text-shadow:0 0 3px #0b0d11,0 0 3px #0b0d11}.gmap .town::before{display:none}.gmap.zlo .town{display:none}
+
+.agescard .ageshead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.agescard .ageshead h3{margin:0}
+.agescard .agesort{display:flex;gap:6px}
+.agescard ol.ages{list-style:none;margin:10px 0 0;padding:0;counter-reset:ag}
+.agescard ol.ages li{counter-increment:ag}
+.agescard ol.ages button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:26px 10px minmax(0,1fr) 70px;grid-template-areas:'n d a v' '. . b .';column-gap:8px;row-gap:5px;align-items:center;padding:8px 4px;border-top:1px solid var(--line,rgba(255,255,255,.07))}
+.agescard ol.ages button::before{grid-area:n;content:counter(ag);color:var(--mute);font-size:12.5px;text-align:right}
+.agescard ol.ages button:focus-visible{outline:2px solid var(--accent,#2F9BFF);outline-offset:2px;border-radius:6px}
+.agescard ol.ages .dot{grid-area:d}
+.agescard .an{grid-area:a;display:flex;flex-direction:column;min-width:0}
+.agescard .an b{font-weight:600;font-size:14.5px;line-height:1.25}
+.agescard .an small{color:var(--mute);font-size:12.5px}
+.agescard ol.ages i{grid-area:b;display:block;height:6px;border-radius:3px;opacity:.75}
+.agescard ol.ages em{grid-area:v;font-style:normal;text-align:right;font-size:14.5px;font-weight:500;font-variant-numeric:tabular-nums}
+@media print{.agescard .agesort{display:none!important}}
 </style>
 </head>
 <body>
@@ -1564,11 +1582,22 @@ const stat={r:"From records",l:"From published genealogies and trees",u:"Not yet
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let cur="kids";
 const kidsOf=id=>Object.keys(D).filter(k=>D[k][3]===id||D[k][4]===id);
+function ageAtDeath(id){const d=D[id];if(!d)return"";const y=d[1]||"",f=d[2]||[];
+ const MO={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
+ const dt=t=>{const m=t&&t.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/);return m?[+m[3],MO[m[1].toLowerCase()],+m[2]]:null};
+ const bf=f.find(x=>/^\s*(Born|Baptized)\b/.test(x)),df=f.find(x=>/^\s*(Died|Killed|Struck and killed|Buried)\b/.test(x));
+ const yr=y.match(/^\s*c?\.?(\d{4})\s*[–-]\s*(\d{4})\s*$/);
+ const b=dt(bf),e=dt(df);
+ if(b&&e&&e[0]>=b[0]&&(!yr||(+yr[1]===b[0]&&+yr[2]===e[0]))){let a=e[0]-b[0];if(e[1]<b[1]||(e[1]===b[1]&&e[2]<b[2]))a--;if(a>=0&&a<115)return a===0?"died as an infant":"died at "+a}
+ const ex=df&&df.match(/\b(?:age|aged|at)\s+(\d{1,3})(?![\d:])(?!\s*(?:a\.m|p\.m|[A-Z]|yrs?\b|years old\b(?=x)))/);
+ if(ex&&+ex[1]<115)return"died at "+ex[1];
+ if(yr){const a=+yr[2]-+yr[1];if(a>=0&&a<115)return"died at about "+a}
+ return""}
 function showPerson(id){
  if(!D[id])id="kids";cur=id;
  const [n,y,f,,,s]=D[id];
  const kids=kidsOf(id);const sibs=D[id][3]?kidsOf(D[id][3]).filter(k=>k!==id&&D[k][4]===D[id][4]):[];
- document.getElementById("focus").innerHTML=SIDE[id]==="J"?`<h2>${esc(n)}</h2>${f.map(x=>`<p class="lead">${esc(x)}</p>`).join("")}${kids.length?"":""}`:`<h2>${esc(n)}</h2><p class="meta">${SIDE[id]==="J"?"":esc(y||"Dates not yet found")+" · "}<span class="tag"><span class="dot" style="background:${col(id)}"></span>${SIDE[id]==="F"?"Dad's side":SIDE[id]==="M"?"Mom's side":"The Henderson children"}</span> · <span class="tag ${s==="u"?"unp":""}">${stat[s]}</span></p>${f.length?`<ul class="facts">${f.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${sibs.length?`<div class="kids">Siblings: ${sibs.map(k=>`<button type="button" data-id="${k}">${esc(D[k][0])}</button>`).join(", ")}</div>`:""}${kids.length?`<div class="kids">Parent of ${kids.map(k=>`<button type="button" data-id="${k}">${esc(D[k][0])}</button>`).join(", ")}</div>`:""}`;
+ document.getElementById("focus").innerHTML=SIDE[id]==="J"?`<h2>${esc(n)}</h2>${f.map(x=>`<p class="lead">${esc(x)}</p>`).join("")}${kids.length?"":""}`:`<h2>${esc(n)}</h2><p class="meta">${SIDE[id]==="J"?"":esc(y||"Dates not yet found")+(ageAtDeath(id)?" · "+ageAtDeath(id):"")+" · "}<span class="tag"><span class="dot" style="background:${col(id)}"></span>${SIDE[id]==="F"?"Dad's side":SIDE[id]==="M"?"Mom's side":"The Henderson children"}</span> · <span class="tag ${s==="u"?"unp":""}">${stat[s]}</span></p>${f.length?`<ul class="facts">${f.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${sibs.length?`<div class="kids">Siblings: ${sibs.map(k=>`<button type="button" data-id="${k}">${esc(D[k][0])}</button>`).join(", ")}</div>`:""}${kids.length?`<div class="kids">Parent of ${kids.map(k=>`<button type="button" data-id="${k}">${esc(D[k][0])}</button>`).join(", ")}</div>`:""}`;
  const slots=[[id]];for(let g=1;g<4;g++){slots[g]=[];for(const p of slots[g-1]){slots[g].push(p&&D[p]?D[p][3]||null:null,p&&D[p]?D[p][4]||null:null)}}
  let h="";slots.forEach((row,g)=>{const span=8/row.length;row.forEach((p,i)=>{const st=`grid-column:${g+1};grid-row:${i*span+1}/span ${span}`;if(p&&D[p]){const u=D[p][5]==="u";h+=`<button type="button" class="p ${g===0?"sel":""}" style="${st}" data-id="${p}"><b><span class="dot" style="background:${col(p)}"></span>${esc(D[p][0])}</b><span class="${u?"unp":""}">${esc(D[p][1]||"—")}${u?" · unproven":""}</span></button>`}else{h+=`<div class="p none" style="${st}"><span>Not yet found</span></div>`}})});
  document.getElementById("ped").innerHTML=h;
@@ -1585,7 +1614,8 @@ const NAMES=Object.keys(D).map(k=>({k,n:D[k][0],y:D[k][1]})).sort((a,b)=>a.n.loc
 const fi=document.getElementById("find"),sg=document.getElementById("sugg");
 function pick(k){showPerson(k);fi.value="";sg.hidden=true;fi.blur();document.getElementById("app").scrollTo({top:0,behavior:"smooth"})}
 fi.addEventListener("input",()=>{const q=fi.value.trim().toLowerCase();if(!q){sg.hidden=true;return}
- const hits=NAMES.filter(x=>x.n.toLowerCase().split(/[\s“”"().]+/).some(w=>w.startsWith(q))||x.n.toLowerCase().includes(q)).slice(0,8);
+ const SIBN=typeof SIBS==="undefined"?[]:Object.entries(SIBS).flatMap(([k,v])=>D[k]?(v.list||[]).map(([n])=>({k,n,y:"sibling of "+D[k][0].replace(/[“"][^”"]*[”"]\s*/g,"").split(" ")[0]})):[]);
+ const hits=NAMES.concat(SIBN).filter(x=>x.n.toLowerCase().split(/[\s“”"().,]+/).some(w=>w.startsWith(q))||x.n.toLowerCase().includes(q)).slice(0,10);
  sg.innerHTML=hits.length?hits.map(x=>`<button type="button" data-k="${x.k}"><span class="dot" style="background:${col(x.k)}"></span><b>${esc(x.n)}</b><span>${esc(x.y||"")}</span></button>`).join(""):`<p>No one by that name yet</p>`;sg.hidden=false});
 sg.addEventListener("mousedown",e=>e.preventDefault());
 sg.addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(b)pick(b.dataset.k)});
@@ -1702,25 +1732,26 @@ const saveReq=()=>{try{localStorage.setItem(RKEY,JSON.stringify(req))}catch(e){}
 const fmtD=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
 function reqCard(k,html){
  const r=req[k]||{},st=r.s||"";
- const when=st==="answered"?`Sent ${r.sent?fmtD(r.sent):"—"} · answered ${fmtD(r.ans)}`:st==="sent"?`Sent ${fmtD(r.sent)} · waiting for a reply`:"";
+ const when=st==="partial"?`Sent ${r.sent?fmtD(r.sent):"—"} · partly answered ${fmtD(r.ans)}`:st==="answered"?`Sent ${r.sent?fmtD(r.sent):"—"} · answered ${fmtD(r.ans)}`:st==="sent"?`Sent ${fmtD(r.sent)} · waiting for a reply`:"";
  const btn=(v,l)=>`<button type="button" data-rq="${k}" data-s="${v}" aria-pressed="${st===v}" class="${st===v?"on":""}">${l}</button>`;
  return `<div class="task req ${st}"><span class="rqdot" aria-hidden="true"></span><div><span class="rqtext">${html}</span>
- <div class="rqbar" role="group" aria-label="Status">${btn("","Not sent")}${btn("sent","Sent")}${btn("answered","Answered")}</div>
+ <div class="rqbar" role="group" aria-label="Status">${btn("","Not sent")}${btn("sent","Sent")}${btn("partial","Partly")}${btn("answered","Answered")}</div>
  ${when?`<p class="rqwhen">${when}</p>`:""}
  ${st?`<textarea data-note="${k}" rows="2" placeholder="Notes: fee paid, who you talked to, what came back…">${esc(r.note||"")}</textarea>`:""}</div></div>`;
 }
 function drawTodo(){
+ const rk=k=>({"":0,sent:1,partial:2,answered:3})[(req[k]||{}).s||""]??0;
  const all=TODO.flatMap(s=>s[2]),isDone=k=>REQ.has(k)?(req[k]||{}).s==="answered":!!done[k];
- const n=all.filter(t=>isDone(t[0])).length,w=[...REQ].filter(k=>(req[k]||{}).s==="sent").length;
+ const n=all.filter(t=>isDone(t[0])).length,w=[...REQ].filter(k=>["sent","partial"].includes((req[k]||{}).s)).length;
  document.getElementById("todo-prog").innerHTML=`<b>${n}</b> of ${all.length} done`+(w?` · <b>${w}</b> waiting for a reply`:"");
- document.getElementById("todo-list").innerHTML=TODO.map(([h,hint,items])=>`<h2>${esc(h)}</h2>${hint?`<p class="hint">${esc(hint)}</p>`:""}${items.map(([k,html])=>REQ.has(k)?reqCard(k,html):`<label class="task ${done[k]?"done":""}"><input type="checkbox" data-k="${k}" ${done[k]?"checked":""}><span>${html}</span></label>`).join("")}`).join("");
+ document.getElementById("todo-list").innerHTML=TODO.map(([h,hint,items])=>`<h2>${esc(h)}</h2>${hint?`<p class="hint">${esc(hint)}</p>`:""}${(items.some(t=>REQ.has(t[0]))?[...items].sort((a,b)=>rk(a[0])-rk(b[0])):[...items].sort((a,b)=>(done[a[0]]?1:0)-(done[b[0]]?1:0))).map(([k,html])=>REQ.has(k)?reqCard(k,html):`<label class="task ${done[k]?"done":""}"><input type="checkbox" data-k="${k}" ${done[k]?"checked":""}><span>${html}</span></label>`).join("")}`).join("");
 }
 const tl=document.getElementById("todo-list");
 tl.addEventListener("change",e=>{const k=e.target.dataset.k;if(k){if(e.target.checked)done[k]=Date.now();else delete done[k];try{localStorage.setItem(TKEY,JSON.stringify(done))}catch(err){}drawTodo();return}
  const nk=e.target.dataset.note;if(nk&&req[nk]){req[nk].note=e.target.value;saveReq()}});
 tl.addEventListener("input",e=>{const nk=e.target.dataset.note;if(nk&&req[nk]){req[nk].note=e.target.value;saveReq()}});
 tl.addEventListener("click",e=>{const b=e.target.closest("button[data-rq]");if(!b)return;const k=b.dataset.rq,v=b.dataset.s,r=req[k]||{};
- if(!v){delete req[k]}else{r.s=v;if(v==="sent"){r.sent=r.sent||Date.now();delete r.ans}if(v==="answered"){r.sent=r.sent||Date.now();r.ans=Date.now()}req[k]=r}
+ if(!v){delete req[k]}else{r.s=v;if(v==="sent"){r.sent=r.sent||Date.now();delete r.ans}if(v==="answered"||v==="partial"){r.sent=r.sent||Date.now();r.ans=Date.now()}req[k]=r}
  saveReq();drawTodo()});
 drawTodo();
 
@@ -2046,7 +2077,7 @@ const TL=[
 ];
 let tlf="all";
 function drawTL(){
- const rows=TL.filter(([, ,t,id])=>tlf==="all"?true:tlf==="fam"?!!id:id&&(SIDE[id]===tlf||(id==="tony"&&tlf==="F")||(id==="betty"&&tlf==="M")));
+ const rows=TL.slice().sort((p,q)=>p[1]-q[1]).filter(([, ,t,id])=>tlf==="all"?true:tlf==="fam"?!!id:id&&(SIDE[id]===tlf||(id==="tony"&&tlf==="F")||(id==="betty"&&tlf==="M")));
  let h="",cent=0;
  rows.sort((a,b)=>a[1]-b[1]).forEach(([y,s,t,id])=>{const c=Math.floor(s/100);if(c!==cent){h+=`<li class="cent">${c+1}${c+1===21?"st":"th"} century</li>`;cent=c}
   h+=id?`<li class="ev fam"><span class="yr">${esc(y)}</span><button type="button" data-person="${id}"><span class="dot" style="background:${col(id)}"></span><span>${esc(t)}</span></button></li>`:`<li class="ev world"><span class="yr">${esc(y)}</span><span class="wt">${esc(t)}</span></li>`});
@@ -2091,10 +2122,22 @@ function drawStats(){
  var names={};ids.forEach(function(k){var n=D[k][0].replace(/^Rev\.\s+/,"").replace(/[“"][^”"]*[”"]\s*/g,"").split(" ")[0];if(n.length>1)names[n]=(names[n]||0)+1});
  var top=Object.keys(names).map(function(k){return [k,names[k]]}).filter(function(x){return x[1]>1}).sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0])}).slice(0,6);
  var tile=function(n,l,s){return `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div>${s?`<div class="s">${s}</div>`:""}</div>`};
- document.getElementById("stats-box").innerHTML=`<div class="tiles">${tile(ids.length,"ancestors named")}${tile(maxG,"generations back","to Jacques Valois, married in New France in 1694")}${tile(Math.round(proven/ids.length*100)+"%","backed by records","the rest from published genealogies and trees")}${tile(avg,"average lifespan, years",lives.length+" ancestors with both dates")}${tile(oldest.age,"longest life, years",esc(D[oldest.id][0])+", "+oldest.b+"–"+oldest.dd)}${tile(earliest.y<1600?"c."+earliest.y:earliest.y,"earliest birth",esc(D[earliest.id][0]))}</div>
+ document.getElementById("stats-box").innerHTML=`<div class="tiles">${tile(ids.length,"ancestors named")}${tile(maxG,"generations back","to Hélie Levallois of Matha, France, and Quebec's first settlers")}${tile(Math.round(proven/ids.length*100)+"%","backed by records","the rest from published genealogies and trees")}${tile(avg,"average lifespan, years",lives.length+" ancestors with both dates")}${tile(oldest.age,"longest life, years",esc(D[oldest.id][0])+", "+oldest.b+"–"+oldest.dd)}${tile(earliest.y<1600?"c."+earliest.y:earliest.y,"earliest birth",esc(D[earliest.id][0]))}</div>
  <div class="card statcard"><h3>Where they were born</h3><p class="note">For the ${pl.reduce(function(s,x){return s+x[1]},0)} ancestors whose birthplace is recorded</p>${pl.map(function(x){return `<div class="bar"><span>${x[0]}</span><i style="width:${Math.max(6,x[1]/pmax*100)}%"></i><b>${x[1]}</b></div>`}).join("")}</div>
  <div class="card statcard"><h3>Most common first names</h3>${top.map(function(x){return `<div class="nm"><span>${esc(x[0])}</span><b>${x[1]}</b></div>`}).join("")}</div>`;
+drawAges();
 }
+var AGES_ORDER="old";
+function drawAges(){
+ var box=document.getElementById("stats-box");if(!box)return;
+ var all=Object.keys(D).filter(function(k){return k!=="kids"});
+ var rows=[];all.forEach(function(k){var t=ageAtDeath(k);if(!t)return;var inf=/infant/.test(t),m=t.match(/(\d+)/);var a=inf?0:(m?+m[1]:null);if(a===null)return;rows.push({id:k,a:a,about:/about/.test(t),inf:inf})});
+ rows.sort(function(x,y){return AGES_ORDER==="old"?(y.a-x.a||D[x.id][0].localeCompare(D[y.id][0])):(x.a-y.a||D[x.id][0].localeCompare(D[y.id][0]))});
+ var max=rows.reduce(function(m,r){return Math.max(m,r.a)},1),missing=all.length-rows.length;
+ var html=`<div class="card statcard agescard" id="ages-card"><div class="ageshead"><h3>Ages at death</h3><div class="agesort" role="group" aria-label="Order"><button type="button" class="chip" data-ages="old" aria-pressed="${AGES_ORDER==="old"}">Oldest first</button><button type="button" class="chip" data-ages="young" aria-pressed="${AGES_ORDER==="young"}">Youngest first</button></div></div><p class="note">${rows.length} ancestors. Tap a name to open their card. “About” means the age is worked out from the years alone.</p><ol class="ages">${rows.map(function(r){return `<li><button type="button" data-id="${r.id}"><span class="dot" style="background:${col(r.id)}"></span><span class="an"><b>${esc(D[r.id][0])}</b><small>${esc(D[r.id][1]||"")}</small></span><i style="width:${Math.max(3,r.a/max*100)}%;background:${col(r.id)}"></i><em>${r.inf?"infant":(r.about?"about ":"")+(r.inf?"":r.a)}</em></button></li>`}).join("")}</ol>${missing?`<p class="note">${missing} more ancestors are left out because their age at death isn't known yet.</p>`:""}</div>`;
+ var old=document.getElementById("ages-card");if(old)old.outerHTML=html;else box.insertAdjacentHTML("beforeend",html);
+}
+document.getElementById("stats-box").addEventListener("click",function(e){var c=e.target.closest("[data-ages]");if(c){AGES_ORDER=c.dataset.ages;drawAges();return}var b=e.target.closest("#ages-card [data-id]");if(b){showPerson(b.dataset.id);location.hash="#tree"}});
 drawStats();
 
 // ---------- share ----------
