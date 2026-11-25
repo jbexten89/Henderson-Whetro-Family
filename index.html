@@ -586,6 +586,14 @@ html.slimhdr .homecard{display:none}
 .agescard ol.ages i{grid-area:b;display:block;height:6px;border-radius:3px;opacity:.75}
 .agescard ol.ages em{grid-area:v;font-style:normal;text-align:right;font-size:14.5px;font-weight:500;font-variant-numeric:tabular-nums}
 @media print{.agescard .agesort{display:none!important}}
+
+.statside{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.statside .chip{display:inline-flex;align-items:center;gap:8px}
+.statside .dot{width:10px;height:10px;border-radius:50%}
+@media print{.statside{display:none!important}}
+
+.sharewide{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:0 0 16px;padding:13px 16px;font-size:16px}
+.sharewide svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
@@ -606,7 +614,7 @@ html.slimhdr .homecard{display:none}
 <div class="findbar">
 <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" id="find" placeholder="Find a person" autocomplete="off" aria-label="Find a person"><div class="sugg" id="sugg" role="listbox" hidden></div></div>
 <button class="iconbtn" id="indexbtn" type="button" aria-label="Family index: surnames and places" title="Surnames and places"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10"/><path d="M4 12h10"/><path d="M4 18h10"/><path d="M18 5v14"/><path d="M16 17l2 2 2-2"/></svg></button>
-<button class="iconbtn" id="sharebtn" type="button" aria-label="Share with family" title="Share with family"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M6 12v8h12v-8"/></svg></button>
+
 <button class="iconbtn" id="home" type="button" aria-label="Back to the start" title="Back to the start"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></button>
 </div>
 <div class="homecard" id="homecard">
@@ -1350,7 +1358,8 @@ html.slimhdr .homecard{display:none}
 </section>
 <section class="view" id="view-help" aria-label="Help" hidden>
 <h2 class="ch2">How to use the app</h2>
-<p class="note" style="margin:0 0 14px">The Henderson–Whetro Family Explorer is the family history of the six Henderson children, traced back as far as ten generations. It is built on the same app as the Bexten Family Explorer. Compiled in November 2026 and updated as new records come in. Tap a topic to open it.</p>
+<p class="note" style="margin:0 0 14px">The Henderson–Whetro Family Explorer is the family history of the six Henderson children, traced back eleven generations. It is built on the same app as the Bexten Family Explorer. Compiled in November 2026 and updated as new records come in. Tap a topic to open it.</p>
+<button class="btn primary sharewide" id="sharebtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M6 12v8h12v-8"/></svg>Share with family</button>
 <div class="help">
 <details open><summary>Getting started</summary>
 <ul>
@@ -1373,7 +1382,7 @@ html.slimhdr .homecard{display:none}
 <li><b>Home screen.</b> Starts with the children, their parents and grandparents, and a one-line <b>This week</b> reminder when a family birth, wedding or death falls in the next seven days; tap it to see them all. On the day itself it shows as <b>On this day</b>. When nothing is coming up, it doesn't appear.</li>
 <li><b>Find a person.</b> Type any part of a name in the search box and pick from the list.</li>
 <li><b>Family index</b> (the list button). Every surname A–Z with what the name means and who carried it, and every place, grouped by state or country, with who was born, lived, married, died or was buried there.</li>
-<li><b>Share</b> (the arrow button). A QR code to scan, plus buttons to send or copy the link with instructions for adding the app to a home screen.</li>
+<li><b>Share with family</b> (the button at the top of this Help page). A QR code to scan, plus buttons to send or copy the link with instructions for adding the app to a home screen.</li>
 <li><b>Home</b> (the house button). Back to the children, and clears the back trail.</li>
 </ul></details>
 
@@ -1972,7 +1981,7 @@ const SIBS={
 };
 const CORD=["","first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth","eleventh"];
 const genOf=id=>{const p=allPaths(id)[0];return p?p.length-1:0};
-const cousinLine=g=>g===0?"The children share all of these ancestors.":g===1?"Their children are the Henderson children's first cousins.":g===2?"Their grandchildren are the Henderson children's second cousins.":`Their descendants in the children's generation are their ${CORD[g]||ordn(g)} cousins.`;
+const cousinLine=g=>{const p="great-".repeat(g-1),r=`These are your ${p}uncles and ${p}aunts`;return g===1?r+"; their children are your first cousins.":g===2?r+"; their grandchildren are your second cousins.":`${r}; their descendants in your generation are your ${CORD[g]||ordn(g)} cousins.`};
 function sibsHTML(id){const s=SIBS[id];if(!s)return"";return `<div class="sibs"><h4>Brothers and sisters</h4>${s.list.length?`<ul>${s.list.map(([n,y])=>`<li><b>${esc(n)}</b>${y?`<span>${esc(y)}</span>`:""}</li>`).join("")}</ul>`:""}${s.note?`<p class="note">${esc(s.note)}</p>`:""}<p class="cz">${cousinLine(genOf(id))}</p></div>`}
 function drawCousins(){
  const ids=Object.keys(SIBS).sort((a,b)=>genOf(a)-genOf(b));let h="",last=0;
@@ -2108,21 +2117,24 @@ document.getElementById("otd").addEventListener("click",function(e){var b=e.targ
 otdShow("kids");
 
 // ---------- family stats ----------
+var STATS_SIDE="all";
+function sideOK(k){return STATS_SIDE==="all"||SIDE[k]===STATS_SIDE}
+function sideChips(){var o=[["all","Both sides"],["F","Dad's side"],["M","Mom's side"]];return `<div class="statside" role="group" aria-label="Which side">${o.map(function(x){return `<button type="button" class="chip" data-sside="${x[0]}" aria-pressed="${STATS_SIDE===x[0]}">${x[0]!=="all"?`<span class="dot" style="background:${x[0]==="F"?"var(--mint)":"var(--peri)"}"></span>`:""}${x[1]}</button>`}).join("")}</div>`}
 function drawStats(){
- var ids=Object.keys(D).filter(function(k){return k!=="kids"});
+ var ids=Object.keys(D).filter(function(k){return k!=="kids"&&sideOK(k)});
  var gens=ids.map(genOf),maxG=Math.max.apply(null,gens);
  var proven=ids.filter(function(k){return D[k][5]==="r"}).length;
  var lives=[];ids.forEach(function(k){var m=(D[k][1]||"").match(/^c?\.?(\d{4})\D+c?\.?(\d{4})$/);if(m)lives.push({id:k,b:+m[1],dd:+m[2],age:+m[2]-+m[1]})});
  var avg=Math.round(lives.reduce(function(s,x){return s+x.age},0)/lives.length);
  var oldest=lives.slice().sort(function(a,b){return b.age-a.age})[0];
  var earliest=ids.map(function(k){var m=(D[k][1]||"").match(/(\d{4})/);return m?{id:k,y:+m[1]}:null}).filter(Boolean).sort(function(a,b){return a.y-b.y})[0];
- var REG=[["Scotland",/Scotland/],["Germany",/Germany|Bavaria/],["Ontario, Canada",/Ontario|Canada/],["Virginia",/Virginia(?! Catharine)/],["Wisconsin",/Wisconsin/],["New York",/New York/],["Pennsylvania",/Pennsylvania/],["Missouri",/Missouri/],["Illinois",/Illinois|Champaign/],["Indiana",/Indiana|Indianapolis/],["Ohio",/Ohio|Alvordton|Fayette|Williams County/]];
- var places={};ids.forEach(function(k){var f=D[k][2].find(function(x){return /^Born\b/.test(x)});if(!f)return;for(var i=0;i<REG.length;i++){if(REG[i][1].test(f)){places[REG[i][0]]=(places[REG[i][0]]||0)+1;return}}});
+ var REG=[["Scotland",/Scotland/],["Ireland",/Ireland/],["Switzerland",/Switzerland/],["France",/France|Saintonge|Brittany|Angoumois|Normandy|Bourbonnais/],["Quebec",/Quebec|Lachine|Pointe-Claire|Montreal|Île-Perrot|Vaudreuil|Trois-Rivières/],["Germany",/Germany|Bavaria|Baden|Hesse/],["Ontario, Canada",/Ontario|Canada/],["Michigan",/Michigan/],["Wisconsin",/Wisconsin/],["New York",/New York/],["Pennsylvania",/Pennsylvania/],["Missouri",/Missouri/],["Illinois",/Illinois|Champaign/],["Indiana",/Indiana|Indianapolis/],["Ohio",/Ohio|Alvordton|Fayette|Williams County/],["Virginia",/Virginia/]];
+ var places={};ids.forEach(function(k){var f=D[k][2].find(function(x){return /^(Born|Baptized)\b/.test(x)});if(!f)return;f=f.split(/;|\b(?:son|daughter) of\b|\bto German|\bparents\b|\(|\bdied\b/)[0];for(var i=0;i<REG.length;i++){if(REG[i][1].test(f)){places[REG[i][0]]=(places[REG[i][0]]||0)+1;return}}});
  var pl=Object.keys(places).map(function(k){return [k,places[k]]}).sort(function(a,b){return b[1]-a[1]}),pmax=pl.length?pl[0][1]:1;
  var names={};ids.forEach(function(k){var n=D[k][0].replace(/^Rev\.\s+/,"").replace(/[“"][^”"]*[”"]\s*/g,"").split(" ")[0];if(n.length>1)names[n]=(names[n]||0)+1});
  var top=Object.keys(names).map(function(k){return [k,names[k]]}).filter(function(x){return x[1]>1}).sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0])}).slice(0,6);
  var tile=function(n,l,s){return `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div>${s?`<div class="s">${s}</div>`:""}</div>`};
- document.getElementById("stats-box").innerHTML=`<div class="tiles">${tile(ids.length,"ancestors named")}${tile(maxG,"generations back","to Hélie Levallois of Matha, France, and Quebec's first settlers")}${tile(Math.round(proven/ids.length*100)+"%","backed by records","the rest from published genealogies and trees")}${tile(avg,"average lifespan, years",lives.length+" ancestors with both dates")}${tile(oldest.age,"longest life, years",esc(D[oldest.id][0])+", "+oldest.b+"–"+oldest.dd)}${tile(earliest.y<1600?"c."+earliest.y:earliest.y,"earliest birth",esc(D[earliest.id][0]))}</div>
+ document.getElementById("stats-box").innerHTML=sideChips()+`<div class="tiles">${tile(ids.length,"ancestors named")}${tile(maxG,"generations back",STATS_SIDE==="F"?"to Baden and Pennsylvania":"to Hélie Levallois of Matha, France, and Quebec's first settlers")}${tile(Math.round(proven/ids.length*100)+"%","backed by records",proven===ids.length?"every one proven by records":"the rest from published genealogies and trees")}${tile(avg,"average lifespan, years",lives.length+" ancestors with both dates")}${tile(oldest.age,"longest life, years",esc(D[oldest.id][0])+", "+oldest.b+"–"+oldest.dd)}${tile(earliest.y<1600?"c."+earliest.y:earliest.y,"earliest birth",esc(D[earliest.id][0]))}</div>
  <div class="card statcard"><h3>Where they were born</h3><p class="note">For the ${pl.reduce(function(s,x){return s+x[1]},0)} ancestors whose birthplace is recorded</p>${pl.map(function(x){return `<div class="bar"><span>${x[0]}</span><i style="width:${Math.max(6,x[1]/pmax*100)}%"></i><b>${x[1]}</b></div>`}).join("")}</div>
  <div class="card statcard"><h3>Most common first names</h3>${top.map(function(x){return `<div class="nm"><span>${esc(x[0])}</span><b>${x[1]}</b></div>`}).join("")}</div>`;
 drawAges();
@@ -2130,14 +2142,14 @@ drawAges();
 var AGES_ORDER="old";
 function drawAges(){
  var box=document.getElementById("stats-box");if(!box)return;
- var all=Object.keys(D).filter(function(k){return k!=="kids"});
+ var all=Object.keys(D).filter(function(k){return k!=="kids"&&sideOK(k)});
  var rows=[];all.forEach(function(k){var t=ageAtDeath(k);if(!t)return;var inf=/infant/.test(t),m=t.match(/(\d+)/);var a=inf?0:(m?+m[1]:null);if(a===null)return;rows.push({id:k,a:a,about:/about/.test(t),inf:inf})});
  rows.sort(function(x,y){return AGES_ORDER==="old"?(y.a-x.a||D[x.id][0].localeCompare(D[y.id][0])):(x.a-y.a||D[x.id][0].localeCompare(D[y.id][0]))});
  var max=rows.reduce(function(m,r){return Math.max(m,r.a)},1),missing=all.length-rows.length;
  var html=`<div class="card statcard agescard" id="ages-card"><div class="ageshead"><h3>Ages at death</h3><div class="agesort" role="group" aria-label="Order"><button type="button" class="chip" data-ages="old" aria-pressed="${AGES_ORDER==="old"}">Oldest first</button><button type="button" class="chip" data-ages="young" aria-pressed="${AGES_ORDER==="young"}">Youngest first</button></div></div><p class="note">${rows.length} ancestors. Tap a name to open their card. “About” means the age is worked out from the years alone.</p><ol class="ages">${rows.map(function(r){return `<li><button type="button" data-id="${r.id}"><span class="dot" style="background:${col(r.id)}"></span><span class="an"><b>${esc(D[r.id][0])}</b><small>${esc(D[r.id][1]||"")}</small></span><i style="width:${Math.max(3,r.a/max*100)}%;background:${col(r.id)}"></i><em>${r.inf?"infant":(r.about?"about ":"")+(r.inf?"":r.a)}</em></button></li>`}).join("")}</ol>${missing?`<p class="note">${missing} more ancestors are left out because their age at death isn't known yet.</p>`:""}</div>`;
  var old=document.getElementById("ages-card");if(old)old.outerHTML=html;else box.insertAdjacentHTML("beforeend",html);
 }
-document.getElementById("stats-box").addEventListener("click",function(e){var c=e.target.closest("[data-ages]");if(c){AGES_ORDER=c.dataset.ages;drawAges();return}var b=e.target.closest("#ages-card [data-id]");if(b){showPerson(b.dataset.id);location.hash="#tree"}});
+document.getElementById("stats-box").addEventListener("click",function(e){var sd=e.target.closest("[data-sside]");if(sd){STATS_SIDE=sd.dataset.sside;drawStats();return}var c=e.target.closest("[data-ages]");if(c){AGES_ORDER=c.dataset.ages;drawAges();return}var b=e.target.closest("#ages-card [data-id]");if(b){showPerson(b.dataset.id);location.hash="#tree"}});
 drawStats();
 
 // ---------- share ----------
