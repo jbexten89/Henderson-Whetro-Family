@@ -2,8 +2,6 @@
 
 The family history of the six Henderson children in one app: an interactive family tree, a migration map from Scotland, Ireland, Germany and France to northwest Ohio, a map of the cemeteries, the family story, the full research report, charts and the research to-do list. It installs to an iPhone home screen and works offline once opened.
 
-Built on the same app as the [Bexten Family Explorer](https://github.com/jbexten89/Bexten-Family-Explorer).
-
 ## Tabs
 
 | Tab | What it shows |
